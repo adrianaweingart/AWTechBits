@@ -1,0 +1,106 @@
+# Only the Python Code
+# Ref. Post "A mágica por trás da imagem" in AW_TechBits blog post
+
+# Importing Libraries
+import pandas as pd
+import numpy as np
+import geopandas as gpd
+import matplotlib.pyplot as plt
+
+
+### Brasil Map
+
+# Importing Brasil Map
+# Source: IBGE - Instituto Brasileiro de Geografia e Estatística
+map_brasil = gpd.read_file('./bcim_2016_21_11_2018.gpkg',
+                           layer = 'lim_unidade_federacao_a')
+
+# Checking the columns in the imported file
+map_brasil.columns
+
+# Checking the file
+map_brasil.head()
+
+# Checking one State in the file
+print('Estado: ' + map_brasil.nome[25])
+map_brasil.geometry[25]
+
+
+### Data Dataset
+
+# Creating the dataset with the information for all Brazilian States
+# Based on the the information shared on 28-May-24 
+# in SEDUC - Secretaria da Educação do Governo do Estado do Ceará
+data = [['CE', 85, 'Nível 5'],
+        ['PR', 73, 'Nível 4'],
+        ['ES', 68, 'Nível 3'],
+        ['GO', 67, 'Nível 3'],
+        ['RO', 65, 'Nível 3'],
+        ['RS', 63, 'Nível 3'],
+        ['SC', 61, 'Nível 3'],
+        ['MG', 60, 'Nível 2'],
+        ['PE', 59, 'Nível 2'],
+        ['MA', 56, 'Nível 2'],
+        ['MT', 55, 'Nível 2'],
+        ['AM', 52, 'Nível 2'],
+        ['PI', 52, 'Nível 2'],
+        ['RJ', 52, 'Nível 2'],
+        ['SP', 52, 'Nível 2'],
+        ['PB', 51, 'Nível 2'],
+        ['PA', 48, 'Nível 1'],
+        ['MS', 47, 'Nível 1'],
+        ['AL', 44, 'Nível 1'],
+        ['TO', 44, 'Nível 1'],
+        ['AP', 42, 'Nível 1'],
+        ['BA', 37, 'Abaixo do Nível 1'],
+        ['RN', 37, 'Abaixo do Nível 1'],
+        ['SE', 31, 'Abaixo do Nível 1'],
+        ['AC', 0, 'N/A'],
+        ['DF', 0, 'N/A'],
+        ['RR', 0, 'N/A']
+       ]
+
+df = pd.DataFrame(data, 
+                  columns =['estado', 'alfabetizacao', 'nivel'])
+
+# Checking the dataset created
+df
+
+# Adjusting the N/A values in the dataset:
+df.at[24, 'nivel'] = np.nan
+df.at[25, 'nivel'] = np.nan
+df.at[26, 'nivel'] = np.nan
+
+
+### Consolidating / Merging both datasets
+
+# Creating copy of the original map dataset
+df_info = map_brasil.copy()
+
+# Renaming column for standardization
+df_info.rename({'sigla': 'estado'},
+               axis = 1,
+               inplace = True)
+
+# Merging the datasets
+
+BRASIL = df_info.merge(df, 
+                       on = 'estado',
+                       how = 'left')
+
+# Checking the desired columns in the consolidated dataset
+BRASIL[['estado', 'alfabetizacao', 'nivel', 'geometry']].head()
+
+
+### Plotting the map
+BRASIL.plot(
+    column = 'nivel',                    # Column with numeric values of interest
+    cmap = 'OrRd',                       # Color palete (alternativelly, explored 'viridis')
+    figsize = (13, 9),                   # Size of the image
+    legend = False,                      # Legend (True or False)
+    edgecolor = 'grey',                  # Borders / edge color
+    missing_kwds = {                     # Configuration for Missing values
+        "color": "lightgrey",
+#       "edgecolor":"red",
+#       "hatch":"///",
+        "label": "Missing Values"})
